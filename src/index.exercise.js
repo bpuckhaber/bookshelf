@@ -10,6 +10,33 @@ const MODAL_STATE = Object.freeze({
   REGISTER: 'register',
 })
 
+function LoginForm({onSubmit, buttonText}) {
+  return (
+    <form
+      onSubmit={event => {
+        event.preventDefault()
+        const {username, password} = event.target.elements
+        onSubmit({
+          username: username.value,
+          password: password.value,
+        })
+      }}
+    >
+      <div>
+        <label htmlFor="username">Username</label>
+        <input id="username" type="text" />
+      </div>
+      <div>
+        <label htmlFor="password">Password</label>
+        <input id="password" type="text" />
+      </div>
+      <div>
+        <button type="submit">{buttonText}</button>
+      </div>
+    </form>
+  )
+}
+
 function App() {
   const [openModal, setOpenModal] = React.useState(MODAL_STATE.NONE)
 
@@ -37,13 +64,31 @@ function App() {
           Register
         </button>
       </div>
-      <Dialog isOpen={openModal === MODAL_STATE.LOGIN}>
+      <Dialog
+        isOpen={openModal === MODAL_STATE.LOGIN}
+        aria-label="Login Dialog"
+      >
         <button onClick={closeModal}>Close</button>
         <h3>Login</h3>
+        <LoginForm
+          onSubmit={values => {
+            console.log(values)
+          }}
+          buttonText="Login"
+        />
       </Dialog>
-      <Dialog isOpen={openModal === MODAL_STATE.REGISTER}>
+      <Dialog
+        isOpen={openModal === MODAL_STATE.REGISTER}
+        aria-label="Register Dialog"
+      >
         <button onClick={closeModal}>Close</button>
         <h3>Register</h3>
+        <LoginForm
+          onSubmit={values => {
+            console.log(values)
+          }}
+          buttonText="Register"
+        />
       </Dialog>
     </>
   )
