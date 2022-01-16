@@ -4,15 +4,18 @@ import {jsx} from '@emotion/core'
 import './bootstrap'
 import Tooltip from '@reach/tooltip'
 import {FaSearch} from 'react-icons/fa'
+import {FaTimes} from 'react-icons/fa'
 import * as React from 'react'
 import {Input, BookListUL, Spinner} from './components/lib'
 import {BookRow} from './components/book-row'
 import {client} from './utils/api-client'
+import * as colors from './styles/colors'
 
 function DiscoverBooksScreen() {
   const [status, setStatus] = React.useState('idle')
   const [data, setData] = React.useState()
   const [query, setQuery] = React.useState()
+  const [error, setError] = React.useState()
 
   const [queried, setQueried] = React.useState(false)
 
@@ -23,14 +26,20 @@ function DiscoverBooksScreen() {
 
     setStatus('loading')
 
-    client(`books?query=${encodeURIComponent(query)}`).then(res => {
-      setStatus('success')
-      setData(res)
-    })
+    client(`books?query=${encodeURIComponent(query)}`)
+      .then(res => {
+        setData(res)
+        setStatus('success')
+      })
+      .catch(res => {
+        setError(res)
+        setStatus('error')
+      })
   }, [queried, query])
 
   const isLoading = status === 'loading'
   const isSuccess = status === 'success'
+  const isError = status === 'error'
 
   function handleSearchSubmit(event) {
     event.preventDefault()
@@ -59,11 +68,23 @@ function DiscoverBooksScreen() {
                 background: 'transparent',
               }}
             >
-              {isLoading ? <Spinner /> : <FaSearch aria-label="search" />}
+              {isLoading ? (
+                <Spinner />
+              ) : isError ? (
+                <FaTimes aria-label="error" css={{color: colors.danger}} />
+              ) : (
+                <FaSearch aria-label="search" />
+              )}
             </button>
           </label>
         </Tooltip>
       </form>
+      {isError ? (
+        <div css={{color: colors.danger}}>
+          <p>There was an error:</p>
+          <pre>{error.message}</pre>
+        </div>
+      ) : null}
 
       {isSuccess ? (
         data?.books?.length ? (
