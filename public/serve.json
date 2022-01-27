@@ -1,1 +1,3 @@
-{}
+{
+  "redirects": [{"source": "/", "destination": "/discover", "type": 302}]
+}
