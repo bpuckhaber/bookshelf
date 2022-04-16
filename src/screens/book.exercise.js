@@ -6,41 +6,20 @@ import debounceFn from 'debounce-fn'
 import {FaRegCalendarAlt} from 'react-icons/fa'
 import Tooltip from '@reach/tooltip'
 import {useParams} from 'react-router-dom'
-import {useQuery, useMutation, queryCache} from 'react-query'
-import {client} from 'utils/api-client'
 import {formatDate} from 'utils/misc'
+import {useBook} from 'utils/books'
+import {useListItem, useUpdateListItem} from 'utils/list-items'
 import * as mq from 'styles/media-queries'
 import * as colors from 'styles/colors'
 import {Textarea} from 'components/lib'
 import {Rating} from 'components/rating'
 import {StatusButtons} from 'components/status-buttons'
-import bookPlaceholderSvg from 'assets/book-placeholder.svg'
-
-const loadingBook = {
-  title: 'Loading...',
-  author: 'loading...',
-  coverImageUrl: bookPlaceholderSvg,
-  publisher: 'Loading Publishing',
-  synopsis: 'Loading...',
-  loadingBook: true,
-}
 
 function BookScreen({user}) {
   const {bookId} = useParams()
+  const {book} = useBook(user, bookId)
+  const {listItem} = useListItem(user, bookId)
 
-  const {data} = useQuery({
-    queryKey: ['book', {bookId}],
-    queryFn: (key, {bookId}) => client(`books/${bookId}`, {token: user.token}),
-  })
-
-  const {data: listItems} = useQuery({
-    queryKey: ['list-items'],
-    queryFn: () =>
-      client(`list-items`, {token: user.token}).then(data => data.listItems),
-  })
-  const listItem = listItems?.find(item => item.bookId === bookId) ?? null
-
-  const book = data?.book ?? loadingBook
   const {title, author, coverImageUrl, publisher, synopsis} = book
 
   return (
@@ -123,19 +102,11 @@ function ListItemTimeframe({listItem}) {
 }
 
 function NotesTextarea({listItem, user}) {
-  const [mutate] = useMutation(
-    updates =>
-      client(`list-items/${updates.id}`, {
-        method: 'PUT',
-        data: updates,
-        token: user.token,
-      }),
-    {onSettled: () => queryCache.invalidateQueries('list-items')},
-  )
+  const [update] = useUpdateListItem(user)
 
   const debouncedMutate = React.useMemo(
-    () => debounceFn(mutate, {wait: 300}),
-    [mutate],
+    () => debounceFn(update, {wait: 300}),
+    [update],
   )
 
   function handleNotesChange(e) {
