@@ -11,7 +11,7 @@ import {useBook} from 'utils/books'
 import {useListItem, useUpdateListItem} from 'utils/list-items'
 import * as mq from 'styles/media-queries'
 import * as colors from 'styles/colors'
-import {Textarea, ErrorMessage} from 'components/lib'
+import {Textarea, ErrorMessage, Spinner} from 'components/lib'
 import {Rating} from 'components/rating'
 import {StatusButtons} from 'components/status-buttons'
 
@@ -102,7 +102,7 @@ function ListItemTimeframe({listItem}) {
 }
 
 function NotesTextarea({listItem, user}) {
-  const [update, {error, isError}] = useUpdateListItem(user)
+  const [update, {error, isError, isLoading}] = useUpdateListItem(user)
 
   const debouncedMutate = React.useMemo(
     () => debounceFn(update, {wait: 300}),
@@ -128,6 +128,7 @@ function NotesTextarea({listItem, user}) {
         >
           Notes
         </label>
+        {isLoading ? <Spinner /> : null}
         {isError ? (
           <ErrorMessage
             error={error}
