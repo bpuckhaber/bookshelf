@@ -20,7 +20,7 @@ function DiscoverBooksScreen({user}) {
 
   React.useEffect(() => {
     return () => {
-      refetchBookSearchQuery(user)
+      return refetchBookSearchQuery(user)
     }
   }, [user])
 
