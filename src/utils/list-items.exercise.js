@@ -26,7 +26,11 @@ export function useListItem(user, bookId) {
 }
 
 const defaultMutationOptions = {
-  onSettled: () => queryCache.invalidateQueries('list-items'),
+  onError: (err, variables, recover) =>
+    typeof recover === 'function' ? recover() : null,
+  onSettled: () => {
+    queryCache.invalidateQueries('list-items')
+  },
 }
 
 export function useUpdateListItem(user, options) {
@@ -37,7 +41,21 @@ export function useUpdateListItem(user, options) {
         data,
         token: user.token,
       }),
-    {...defaultMutationOptions, ...options},
+    {
+      onMutate(newItem) {
+        const previousItems = queryCache.getQueryData('list-items')
+
+        queryCache.setQueryData('list-items', old => {
+          return old.map(item => {
+            return item.id === newItem.id ? {...item, ...newItem} : item
+          })
+        })
+
+        return () => queryCache.setQueryData('list-items', previousItems)
+      },
+      ...defaultMutationOptions,
+      ...options,
+    },
   )
 }
 
@@ -48,7 +66,19 @@ export function useRemoveListItem(user, options) {
         method: 'DELETE',
         token: user.token,
       }),
-    {...defaultMutationOptions, ...options},
+    {
+      onMutate(removedItem) {
+        const previousItems = queryCache.getQueryData('list-items')
+
+        queryCache.setQueryData('list-items', old => {
+          return old.filter(item => item.id !== removedItem.id)
+        })
+
+        return () => queryCache.setQueryData('list-items', previousItems)
+      },
+      ...defaultMutationOptions,
+      ...options,
+    },
   )
 }
 
