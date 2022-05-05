@@ -64,7 +64,17 @@ export function AuthProvider(props) {
 export function useAuth() {
   const context = React.useContext(AuthContext)
   if (!context) {
-    throw new Error('useAuth must be used within a AuthContext Provider')
+    throw new Error('useAuth must be used within a AuthProvider')
   }
   return context
+}
+
+export function useClient() {
+  const {
+    user: {token},
+  } = useAuth()
+  return React.useCallback(
+    (endpoint, config) => client(endpoint, {...config, token}),
+    [token],
+  )
 }
