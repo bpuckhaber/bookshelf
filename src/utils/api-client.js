@@ -34,4 +34,4 @@ async function client(
   })
 }
 
-export {client}
+export {client, apiURL}
