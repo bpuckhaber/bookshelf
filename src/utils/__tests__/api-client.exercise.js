@@ -1,5 +1,10 @@
+import {queryCache} from 'react-query'
+import * as auth from 'auth-provider'
 import {server, rest} from 'test/server'
 import {client, apiURL} from '../api-client'
+
+jest.mock('react-query')
+jest.mock('auth-provider')
 
 beforeAll(() => {
   server.listen()
@@ -78,4 +83,36 @@ test('when data is provided, it is stringified and the method defaults to POST',
   await client(endpoint, {data: mockData})
 
   expect(request.body).toEqual(mockData)
+})
+
+test('when response status not in 200-299 then reject with response', async () => {
+  const mockResponse = {message: 'this is the response!'}
+  const endpoint = 'test-endpoint'
+  server.use(
+    rest.get(`${apiURL}/${endpoint}`, async (req, res, ctx) => {
+      return res(ctx.status(500), ctx.json(mockResponse))
+    }),
+  )
+
+  const fn = async () => {
+    await client(endpoint)
+  }
+
+  expect(fn).rejects.toEqual(mockResponse)
+})
+
+test('logs out the user and clears the query cache when response status is 401', async () => {
+  const endpoint = 'test-endpoint'
+  server.use(
+    rest.get(`${apiURL}/${endpoint}`, async (req, res, ctx) => {
+      return res(ctx.status(401), ctx.json({}))
+    }),
+  )
+
+  const error = await client(endpoint).catch(e => e)
+
+  expect(error.message).toMatchInlineSnapshot(`"Please re-authenticate."`)
+
+  expect(queryCache.clear).toHaveBeenCalledTimes(1)
+  expect(auth.logout).toHaveBeenCalledTimes(1)
 })
