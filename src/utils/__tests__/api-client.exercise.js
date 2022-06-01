@@ -6,18 +6,6 @@ import {client, apiURL} from '../api-client'
 jest.mock('react-query')
 jest.mock('auth-provider')
 
-beforeAll(() => {
-  server.listen()
-})
-
-afterAll(() => {
-  server.close()
-})
-
-afterEach(() => {
-  server.resetHandlers()
-})
-
 test('calls fetch at the endpoint with the arguments for GET requests', async () => {
   const endpoint = 'test-endpoint'
   const mockResult = {mockValue: 'VALUE'}
