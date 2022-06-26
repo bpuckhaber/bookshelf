@@ -18,36 +18,54 @@ function deferred() {
   return {promise, resolve, reject}
 }
 
+const idleState = {
+  status: 'idle',
+  data: null,
+  error: null,
+  isIdle: true,
+  isLoading: false,
+  isError: false,
+  isSuccess: false,
+}
+
+const pendingState = {
+  status: 'pending',
+  data: null,
+  error: null,
+  isIdle: false,
+  isLoading: true,
+  isError: false,
+  isSuccess: false,
+}
+
+const resolvedState = {
+  status: 'resolved',
+  error: null,
+  isIdle: false,
+  isLoading: false,
+  isError: false,
+  isSuccess: true,
+}
+
+const rejectedState = {
+  status: 'rejected',
+  data: null,
+  isIdle: false,
+  isLoading: false,
+  isError: true,
+  isSuccess: false,
+}
+
 test('calling run with a promise which resolves', async () => {
   const {promise, resolve} = deferred()
   const {result} = renderHook(() => useAsync())
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'idle',
-      data: null,
-      error: null,
-      isIdle: true,
-      isLoading: false,
-      isError: false,
-      isSuccess: false,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(idleState))
 
   let p
   act(() => {
     p = result.current.run(promise)
   })
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'pending',
-      data: null,
-      error: null,
-      isIdle: false,
-      isLoading: true,
-      isError: false,
-      isSuccess: false,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(pendingState))
 
   const resolvedValue = Symbol('resolved value')
   await act(async () => {
@@ -56,62 +74,27 @@ test('calling run with a promise which resolves', async () => {
   })
   expect(result.current).toEqual(
     expect.objectContaining({
-      status: 'resolved',
+      ...resolvedState,
       data: resolvedValue,
-      error: null,
-      isIdle: false,
-      isLoading: false,
-      isError: false,
-      isSuccess: true,
     }),
   )
 
   act(() => {
     result.current.reset()
   })
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'idle',
-      data: null,
-      error: null,
-      isIdle: true,
-      isLoading: false,
-      isError: false,
-      isSuccess: false,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(idleState))
 })
 
 test('calling run with a promise which rejects', async () => {
   const {promise, reject} = deferred()
   const {result} = renderHook(() => useAsync())
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'idle',
-      data: null,
-      error: null,
-      isIdle: true,
-      isLoading: false,
-      isError: false,
-      isSuccess: false,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(idleState))
 
   let p
   act(() => {
     p = result.current.run(promise).catch(() => {})
   })
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'pending',
-      data: null,
-      error: null,
-      isIdle: false,
-      isLoading: true,
-      isError: false,
-      isSuccess: false,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(pendingState))
 
   const rejectedValue = Symbol('rejected value')
   await act(async () => {
@@ -120,30 +103,15 @@ test('calling run with a promise which rejects', async () => {
   })
   expect(result.current).toEqual(
     expect.objectContaining({
-      status: 'rejected',
-      data: null,
+      ...rejectedState,
       error: rejectedValue,
-      isIdle: false,
-      isLoading: false,
-      isError: true,
-      isSuccess: false,
     }),
   )
 
   act(() => {
     result.current.reset()
   })
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'idle',
-      data: null,
-      error: null,
-      isIdle: true,
-      isLoading: false,
-      isError: false,
-      isSuccess: false,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(idleState))
 })
 
 test('can specify an initial state', () => {
@@ -153,32 +121,12 @@ test('can specify an initial state', () => {
     data: initialData,
   }
   const {result} = renderHook(() => useAsync(customInitialState))
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'resolved',
-      data: initialData,
-      error: null,
-      isIdle: false,
-      isLoading: false,
-      isError: false,
-      isSuccess: true,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(resolvedState))
 })
 
 test('can set the data', async () => {
   const {result} = renderHook(() => useAsync())
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'idle',
-      data: null,
-      error: null,
-      isIdle: true,
-      isLoading: false,
-      isError: false,
-      isSuccess: false,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(idleState))
 
   const newData = {foo: 'bar'}
   act(() => {
@@ -187,79 +135,34 @@ test('can set the data', async () => {
 
   expect(result.current).toEqual(
     expect.objectContaining({
-      status: 'resolved',
+      ...resolvedState,
       data: newData,
-      error: null,
-      isIdle: false,
-      isLoading: false,
-      isError: false,
-      isSuccess: true,
     }),
   )
 })
 
 test('can set the error', async () => {
   const {result} = renderHook(() => useAsync())
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'idle',
-      data: null,
-      error: null,
-      isIdle: true,
-      isLoading: false,
-      isError: false,
-      isSuccess: false,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(idleState))
 
   const newError = {foo: 'bar'}
   act(() => {
     result.current.setError(newError)
   })
 
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'rejected',
-      data: null,
-      error: newError,
-      isIdle: false,
-      isLoading: false,
-      isError: true,
-      isSuccess: false,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(rejectedState))
 })
 
 test('No state updates happen if the component is unmounted while pending', async () => {
   const {promise, resolve} = deferred()
   const {result, unmount} = renderHook(() => useAsync())
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'idle',
-      data: null,
-      error: null,
-      isIdle: true,
-      isLoading: false,
-      isError: false,
-      isSuccess: false,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(idleState))
 
   let p
   act(() => {
     p = result.current.run(promise)
   })
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'pending',
-      data: null,
-      error: null,
-      isIdle: false,
-      isLoading: true,
-      isError: false,
-      isSuccess: false,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(pendingState))
 
   unmount()
   await act(async () => {
@@ -267,17 +170,7 @@ test('No state updates happen if the component is unmounted while pending', asyn
     await p
   })
 
-  expect(result.current).toEqual(
-    expect.objectContaining({
-      status: 'pending',
-      data: null,
-      error: null,
-      isIdle: false,
-      isLoading: true,
-      isError: false,
-      isSuccess: false,
-    }),
-  )
+  expect(result.current).toEqual(expect.objectContaining(pendingState))
 
   expect(console.error).not.toHaveBeenCalled()
 })
