@@ -5,42 +5,37 @@ import {buildUser, buildBook} from 'test/generate'
 import * as auth from 'auth-provider'
 import {AppProviders} from 'context'
 import {App} from 'app'
+import * as usersDB from 'test/data/users'
+import * as booksDB from 'test/data/books'
+import * as listItemsDB from 'test/data/list-items'
 
 afterEach(async () => {
   queryCache.clear()
-  await auth.logout()
+  await Promise.all([
+    auth.logout(),
+    usersDB.reset(),
+    booksDB.reset(),
+    listItemsDB.reset(),
+  ])
 })
 
 test('renders all the book information', async () => {
   const user = buildUser()
-  const token = 'FAKE_TOKEN'
-  window.localStorage.setItem(auth.localStorageKey, token)
+  await usersDB.create(user)
+  const authUser = await usersDB.authenticate(user)
+  window.localStorage.setItem(auth.localStorageKey, authUser.token)
 
-  const book = buildBook()
+  const book = await booksDB.create(buildBook())
+
   const route = `/book/${book.id}`
   window.history.pushState({}, 'test page', route)
 
-  window.fetch = async url => {
-    let data
-    if (url.endsWith('/bootstrap')) {
-      data = {user: {...user, token}, listItems: []}
-    } else if (url.endsWith('/list-items')) {
-      data = {listItems: []}
-    } else if (url.endsWith(`/books/${book.id}`)) {
-      data = {book}
-    } else {
-      return Promise.reject(new Error(`NEED TO HANDLE: ${url}`))
-    }
-
-    return {
-      ok: true,
-      json: async () => data,
-    }
-  }
-
   render(<App />, {wrapper: AppProviders})
 
-  await waitForElementToBeRemoved(() => screen.getByLabelText(/loading/i))
+  await waitForElementToBeRemoved(() => [
+    ...screen.queryAllByLabelText(/loading/i),
+    ...screen.queryAllByText(/loading/i),
+  ])
 
   expect(screen.getByRole('heading', {name: book.title})).toBeInTheDocument()
   expect(screen.getByText(book.author)).toBeInTheDocument()
