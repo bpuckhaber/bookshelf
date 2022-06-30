@@ -21,11 +21,22 @@ afterEach(async () => {
   ])
 })
 
-test('renders all the book information', async () => {
+async function loginAsUser() {
   const user = buildUser()
   await usersDB.create(user)
   const authUser = await usersDB.authenticate(user)
   window.localStorage.setItem(auth.localStorageKey, authUser.token)
+}
+
+function waitForLoadingToFinish() {
+  return waitForElementToBeRemoved(() => [
+    ...screen.queryAllByLabelText(/loading/i),
+    ...screen.queryAllByText(/loading/i),
+  ])
+}
+
+test('renders all the book information', async () => {
+  await loginAsUser()
 
   const book = await booksDB.create(buildBook())
 
@@ -34,10 +45,7 @@ test('renders all the book information', async () => {
 
   render(<App />, {wrapper: AppProviders})
 
-  await waitForElementToBeRemoved(() => [
-    ...screen.queryAllByLabelText(/loading/i),
-    ...screen.queryAllByText(/loading/i),
-  ])
+  await waitForLoadingToFinish()
 
   expect(screen.getByRole('heading', {name: book.title})).toBeInTheDocument()
   expect(screen.getByText(book.author)).toBeInTheDocument()
@@ -66,10 +74,7 @@ test('renders all the book information', async () => {
 })
 
 test('can create a list item for the book', async () => {
-  const user = buildUser()
-  await usersDB.create(user)
-  const authUser = await usersDB.authenticate(user)
-  window.localStorage.setItem(auth.localStorageKey, authUser.token)
+  await loginAsUser()
 
   const book = await booksDB.create(buildBook())
 
@@ -78,10 +83,7 @@ test('can create a list item for the book', async () => {
 
   render(<App />, {wrapper: AppProviders})
 
-  await waitForElementToBeRemoved(() => [
-    ...screen.queryAllByLabelText(/loading/i),
-    ...screen.queryAllByText(/loading/i),
-  ])
+  await waitForLoadingToFinish()
 
   userEvent.click(screen.getByRole('button', {name: /add to list/i}))
 
