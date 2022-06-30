@@ -1,51 +1,16 @@
 import * as React from 'react'
-import {render, screen, waitForElementToBeRemoved} from '@testing-library/react'
-import {queryCache} from 'react-query'
-import {buildUser, buildBook} from 'test/generate'
-import * as auth from 'auth-provider'
-import {AppProviders} from 'context'
+import {render, screen, waitForLoadingToFinish} from 'test/app-test-utils'
+import {buildBook} from 'test/generate'
 import {App} from 'app'
-import * as usersDB from 'test/data/users'
 import * as booksDB from 'test/data/books'
 import {formatDate} from 'utils/misc'
-import * as listItemsDB from 'test/data/list-items'
 import userEvent from '@testing-library/user-event'
 
-afterEach(async () => {
-  queryCache.clear()
-  await Promise.all([
-    auth.logout(),
-    usersDB.reset(),
-    booksDB.reset(),
-    listItemsDB.reset(),
-  ])
-})
-
-async function loginAsUser() {
-  const user = buildUser()
-  await usersDB.create(user)
-  const authUser = await usersDB.authenticate(user)
-  window.localStorage.setItem(auth.localStorageKey, authUser.token)
-}
-
-function waitForLoadingToFinish() {
-  return waitForElementToBeRemoved(() => [
-    ...screen.queryAllByLabelText(/loading/i),
-    ...screen.queryAllByText(/loading/i),
-  ])
-}
-
 test('renders all the book information', async () => {
-  await loginAsUser()
-
   const book = await booksDB.create(buildBook())
-
   const route = `/book/${book.id}`
-  window.history.pushState({}, 'test page', route)
 
-  render(<App />, {wrapper: AppProviders})
-
-  await waitForLoadingToFinish()
+  await render(<App />, {route})
 
   expect(screen.getByRole('heading', {name: book.title})).toBeInTheDocument()
   expect(screen.getByText(book.author)).toBeInTheDocument()
@@ -74,23 +39,14 @@ test('renders all the book information', async () => {
 })
 
 test('can create a list item for the book', async () => {
-  await loginAsUser()
-
   const book = await booksDB.create(buildBook())
-
   const route = `/book/${book.id}`
-  window.history.pushState({}, 'test page', route)
 
-  render(<App />, {wrapper: AppProviders})
-
-  await waitForLoadingToFinish()
+  await render(<App />, {route})
 
   userEvent.click(screen.getByRole('button', {name: /add to list/i}))
 
-  await waitForElementToBeRemoved(() => [
-    ...screen.queryAllByLabelText(/loading/i),
-    ...screen.queryAllByText(/loading/i),
-  ])
+  await waitForLoadingToFinish()
 
   expect(
     screen.queryByRole('button', {name: /add to list/i}),
