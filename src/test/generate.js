@@ -27,7 +27,7 @@ function buildListItem(overrides = {}) {
     bookId = overrides.book ? overrides.book.id : faker.datatype.uuid(),
     startDate = faker.date.past(2).getTime(),
     finishDate = faker.date.between(startDate, new Date()).getTime(),
-    owner = {ownerId: faker.random.uuid()},
+    owner = {ownerId: faker.datatype.uuid()},
   } = overrides
   return {
     id: faker.datatype.uuid(),

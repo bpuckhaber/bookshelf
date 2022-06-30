@@ -9,11 +9,12 @@ import * as auth from 'auth-provider'
 import {buildUser} from './generate'
 import * as usersDB from './data/users'
 
-async function loginAsUser() {
-  const user = buildUser()
+async function loginAsUser(userOverrides) {
+  const user = buildUser(userOverrides)
   await usersDB.create(user)
   const authUser = await usersDB.authenticate(user)
   window.localStorage.setItem(auth.localStorageKey, authUser.token)
+  return authUser
 }
 
 function waitForLoadingToFinish() {
@@ -24,7 +25,7 @@ function waitForLoadingToFinish() {
 }
 
 async function render(ui, {user: userArg, route, ...options}) {
-  const user = userArg !== null ? await loginAsUser() : null
+  const user = typeof userArg === 'undefined' ? await loginAsUser() : userArg
 
   window.history.pushState({}, 'test page', route)
 
