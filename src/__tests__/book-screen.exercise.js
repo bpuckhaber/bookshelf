@@ -13,11 +13,32 @@ import * as booksDB from 'test/data/books'
 import * as listItemsDB from 'test/data/list-items'
 import {formatDate} from 'utils/misc'
 
-test('renders all the book information', async () => {
-  const book = await booksDB.create(buildBook())
+async function renderBookScreen(args = {}) {
+  const user =
+    typeof args.user === 'undefined' ? await loginAsUser() : args.user
+
+  const book =
+    typeof args.book === 'undefined'
+      ? await booksDB.create(buildBook())
+      : args.book
+
+  const listItem =
+    typeof args.listItem === 'undefined'
+      ? await listItemsDB.create(buildListItem({owner: user, book}))
+      : args.listItem
+
   const route = `/book/${book.id}`
 
-  await render(<App />, {route})
+  return {
+    ...(await render(<App />, {route, user})),
+    user,
+    book,
+    listItem,
+  }
+}
+
+test('renders all the book information', async () => {
+  const {book} = await renderBookScreen({listItem: null})
 
   expect(screen.getByRole('heading', {name: book.title})).toBeInTheDocument()
   expect(screen.getByText(book.author)).toBeInTheDocument()
@@ -46,10 +67,7 @@ test('renders all the book information', async () => {
 })
 
 test('can create a list item for the book', async () => {
-  const book = await booksDB.create(buildBook())
-  const route = `/book/${book.id}`
-
-  await render(<App />, {route})
+  await renderBookScreen({listItem: null})
 
   userEvent.click(screen.getByRole('button', {name: /add to list/i}))
 
@@ -76,12 +94,7 @@ test('can create a list item for the book', async () => {
 })
 
 test('can remove a list item for the book', async () => {
-  const user = await loginAsUser()
-  const book = await booksDB.create(buildBook())
-  await listItemsDB.create(buildListItem({owner: user, book}))
-  const route = `/book/${book.id}`
-
-  await render(<App />, {route, user})
+  await renderBookScreen()
 
   userEvent.click(screen.getByRole('button', {name: /remove from list/i}))
 
@@ -95,14 +108,7 @@ test('can remove a list item for the book', async () => {
 })
 
 test('can mark a list item as read', async () => {
-  const user = await loginAsUser()
-  const book = await booksDB.create(buildBook())
-  const listItem = await listItemsDB.create(
-    buildListItem({owner: user, book, finishDate: null}),
-  )
-  const route = `/book/${book.id}`
-
-  await render(<App />, {route, user})
+  const {listItem} = await renderBookScreen()
 
   const markAsReadButton = screen.getByRole('button', {name: /mark as read/i})
   userEvent.click(markAsReadButton)
@@ -125,15 +131,10 @@ test('can mark a list item as read', async () => {
   ).not.toBeInTheDocument()
 })
 
-test.only('can edit a note', async () => {
+test('can edit a note', async () => {
   jest.useFakeTimers()
 
-  const user = await loginAsUser()
-  const book = await booksDB.create(buildBook())
-  const listItem = await listItemsDB.create(buildListItem({owner: user, book}))
-  const route = `/book/${book.id}`
-
-  await render(<App />, {route})
+  const {listItem} = await renderBookScreen()
 
   const newNotes = faker.lorem.words()
   const notesTextarea = screen.getByRole('textbox', {name: /notes/i})
